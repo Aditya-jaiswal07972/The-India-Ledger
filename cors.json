@@ -1,0 +1,8 @@
+[
+  {
+    "origin": ["https://ledger-73fe1.web.app"],
+    "method": ["GET", "POST", "PUT", "DELETE", "HEAD"],
+    "responseHeader": ["Content-Type", "x-goog-meta-*"],
+    "maxAgeSeconds": 3600
+  }
+]

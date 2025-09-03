@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta
+      name="google-site-verification"
+      content="lsfdAbp_14FYdZMyQM26zeXGiTUDqRvyfvg9ypmYPiA"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="UTF-8" />
+    <title>The India Ledger</title>
+
+    <!-- React + ReactDOM + Babel -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Firebase v9 compat -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+
+    <style>
+      :root {
+  --brand: #9333ea;       /* vivid blue */
+  --brand-dark: #a855f7;  
+  --bg: #f3f4f6;          /* softer background */
+  --card: #ffffff;
+  --text: #111827;        /* not pure black */
+  --muted: #6b7280;       /* soft gray */
+  --border: #e5e7eb;
+  --shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+body.dark {
+  --bg: #111827;
+  --card: #1f2937;
+  --text: #f9fafb;
+  --muted: #9ca3af;
+  --border: #374151;
+  --shadow: 0 6px 14px rgba(0, 0, 0, 0.25);
+}
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        transition: background 0.3s, color 0.3s;
+      }
+      h1 {
+        margin: 20px;
+        font-size: 28px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .subhead {
+        margin: 0 20px 10px;
+        color: var(--muted);
+      }
+
+      /* Dark mode
+      body.dark {
+        --bg: #1e272e;
+        --card: #2f3640;
+        --text: #ecf0f1;
+        --muted: #b2bec3;
+        --border: #3b3b3b;
+        --shadow: 0 6px 14px rgba(0, 0, 0, 0.25);
+      } */
+
+      /* Menu button (right) */
+      .menu-btn {
+        position: fixed;
+        top: 15px;
+        right: 15px;
+        z-index: 1001;
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        background: var(--brand);
+        color: #fff;
+        cursor: pointer;
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+        border: none;
+        transition: background 0.2s, transform 0.1s;
+      }
+      .menu-btn:hover {
+        background: var(--brand-dark);
+      }
+      .menu-btn:active {
+        transform: scale(0.98);
+      }
+
+      /* Sidebar (right) */
+      .sidebar {
+        position: fixed;
+        top: 0;
+        right: -300px;
+        height: 100%;
+        width: 300px;
+        background: var(--card);
+        color: var(--text);
+        box-shadow: -6px 0 18px rgba(0, 0, 0, 0.22);
+        transition: right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        padding: 18px;
+        z-index: 1000;
+        overflow-y: auto;
+        border-top-left-radius: 16px;
+        border-bottom-left-radius: 16px;
+      }
+      .sidebar.open {
+        right: 0;
+      }
+      .side-title {
+        margin: 6px 0 12px;
+        font-size: 18px;
+        font-weight: 700;
+      }
+      .side-section {
+        padding: 12px 0;
+        border-top: 1px solid var(--border);
+      }
+      .side-section:first-of-type {
+        border-top: none;
+      }
+      .row {
+        display: flex;
+        gap: 8px;
+      }
+      .btn,
+      .input {
+        width: 100%;
+        padding: 10px 12px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: #f8f9fb;
+        color: inherit;
+        box-shadow: inset 0 0 0 9999px rgba(0, 0, 0, 0);
+        transition: background 0.2s, border 0.2s;
+        font-size: 14px;
+      }
+      body.dark .btn,
+      body.dark .input {
+        background: #3b3f46;
+      }
+      .btn {
+        cursor: pointer;
+        border: none;
+        background: #eef2f6;
+      }
+      .btn.primary {
+        background: var(--brand);
+        color: #fff;
+        border: none;
+      }
+      .btn.primary:hover {
+        background: var(--brand-dark);
+      }
+      .btn.soft {
+        background: #eef2f6;
+      }
+      .btn.soft:hover {
+        background: #e6ebf1;
+      }
+
+      /* Sticky categories bar */
+      .categories {
+        position: sticky;
+        top: 0;
+        z-index: 500;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        padding: 10px 20px;
+        background: #ecf0f1;
+        border-top: 1px solid var(--border);
+        border-bottom: 1px solid var(--border);
+        overflow-x: auto;
+      }
+      body.dark .categories {
+        background: #2b2f36;
+      }
+      .chip {
+        padding: 7px 14px;
+        border: none;
+        border-radius: 999px;
+        cursor: pointer;
+        background: #cfd6dc;
+        color: #2c3e50;
+        transition: transform 0.12s, background 0.2s;
+        white-space: nowrap;
+        font-weight: 600;
+        font-size: 13px;
+      }
+      .chip:hover {
+        transform: translateY(-1px);
+      }
+      .chip.active {
+        background: var(--brand);
+        color: #fff;
+      }
+
+      /* Article list */
+      .list.compact .article {
+        border-bottom: 1px solid var(--border);
+        padding: 12px 16px;
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+      }
+      .thumb {
+        width: 90px;
+        height: 90px;
+        border-radius: 8px;
+        object-fit: cover;
+        flex: 0 0 90px;
+        background: #ddd;
+      }
+      .meta small {
+        color: var(--muted);
+      }
+
+      .list.cards {
+        padding: 18px;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 16px;
+      }
+      .card {
+        flex: 0 1 320px;
+        max-width: 100%;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        transition: transform 0.15s, box-shadow 0.15s, border 0.15s;
+      }
+      .card:hover {
+        transform: translateY(-2px);
+      }
+      .card-img {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+        display: block;
+        background: #dfe6e9;
+      }
+      .card-body {
+        padding: 14px 14px 16px;
+      }
+      .card-footer {
+        margin-top: 12px;
+        font-size: 14px;
+        color: var(--muted);
+        display: block;
+      }
+      .title {
+        margin: 0 0 8px;
+        font-size: 18px;
+      }
+      .muted {
+        color: var(--muted);
+      }
+
+      /* Admin actions */
+      .actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 10px;
+      }
+      .act {
+        flex: 1;
+        padding: 8px 10px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      .edit {
+        background: #f39c12;
+        color: #fff;
+      }
+      .del {
+        background: #e74c3c;
+        color: #fff;
+      }
+
+      /* Admin panel (add new) */
+      .panel {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        margin: 20px;
+        padding: 16px;
+        box-shadow: var(--shadow);
+      }
+      .panel h3 {
+        margin-top: 0;
+      }
+
+      /* Inline edit form inside a card */
+      .inline-form .row {
+        display: flex;
+        gap: 8px;
+      }
+      .inline-form input[type="text"],
+      .inline-form textarea {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: #fff;
+        color: inherit;
+      }
+      body.dark .inline-form input[type="text"],
+      body.dark .inline-form textarea {
+        background: #3b3f46;
+      }
+      .inline-form textarea {
+        min-height: 90px;
+        resize: vertical;
+      }
+
+      /* ✅ Mobile & small tablet adjustments */
+      @media (max-width: 768px) {
+        h1 {
+          font-size: 22px;
+          margin: 12px;
+        }
+        .subhead {
+          margin: 0 12px 10px;
+          font-size: 14px;
+        }
+
+        /* Menu & sidebar */
+        .menu-btn {
+          width: 40px;
+          height: 40px;
+          font-size: 18px;
+        }
+        .sidebar {
+          width: 85%; /* instead of fixed 300px */
+          border-radius: 0;
+        }
+
+        /* Categories */
+        .categories {
+          padding: 8px 12px;
+          gap: 6px;
+          font-size: 13px;
+        }
+        .chip {
+          padding: 6px 10px;
+          font-size: 12px;
+        }
+
+        /* Cards: 1 per row */
+        .list.cards {
+          grid-template-columns: 1fr;
+          padding: 10px;
+          gap: 12px;
+        }
+        .card-img {
+          height: 160px;
+        }
+
+        /* Compact list */
+        .list.compact .article {
+          padding: 10px;
+          gap: 8px;
+        }
+        .thumb {
+          width: 60px;
+          height: 60px;
+        }
+
+        /* Buttons & inputs */
+        .btn,
+        .input {
+          font-size: 16px;
+          padding: 12px;
+        }
+
+        /* Admin panel */
+        .panel {
+          margin: 12px;
+          padding: 12px;
+        }
+      }
+      /* ✅ Floating Modal */
+      .modal-overlay {
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+      }
+      .modal {
+        background: var(--card);
+        padding: 20px;
+        border-radius: 16px;
+        width: 90%;
+        max-width: 500px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      }
+      .modal h3 {
+        margin-top: 0;
+      }
+      .modal .row {
+        margin-top: 10px;
+        display: flex;
+        gap: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <button class="menu-btn" id="menuBtn" aria-label="Open menu">☰</button>
+    <div id="root"></div>
+<script type="text/babel">
+  function timeAgo(timestamp) {
+    const now = new Date();
+    const seconds = Math.floor((now - timestamp) / 1000);
+    const intervals = [
+      { label: "year", seconds: 31536000 },
+      { label: "month", seconds: 2592000 },
+      { label: "day", seconds: 86400 },
+      { label: "hour", seconds: 3600 },
+      { label: "minute", seconds: 60 },
+      { label: "second", seconds: 1 },
+    ];
+    for (let i of intervals) {
+      const count = Math.floor(seconds / i.seconds);
+      if (count >= 1) {
+        return `${count} ${i.label}${count > 1 ? "s" : ""} ago`;
+      }
+    }
+    return "just now";
+  }
+
+  const { useState, useEffect, useMemo } = React;
+
+  // Firebase config (unchanged)
+  const firebaseConfig = { 
+    apiKey: "AIzaSyC9XQDnKcr3ArZ0ZNlb83pvcS9pO3nZcb8",
+    authDomain: "ledger-73fe1.firebaseapp.com",
+    projectId: "ledger-73fe1",
+    storageBucket: "ledger-73fe1.firebasestorage.app",
+    messagingSenderId: "1035408799865",
+    appId: "1:1035408799865:web:246f29a1b87e867a66fca8",
+    measurementId: "G-KMC2BW6CMN",
+  };
+  if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  function App() {
+    const [theme, setTheme] = useState(localStorage.getItem("theme") || "light");
+    const [view, setView] = useState(localStorage.getItem("view") || "cards");
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+
+    const [isAdmin, setIsAdmin] = useState(false);
+    const [adminId, setAdminId] = useState("");
+    const [adminPw, setAdminPw] = useState("");
+
+    const [articles, setArticles] = useState([]);
+    const [search, setSearch] = useState("");
+    const [selectedCat, setSelectedCat] = useState("All");
+
+    // Add modal state
+    const [showAddModal, setShowAddModal] = useState(false);
+    const [newTitle, setNewTitle] = useState("");
+    const [newContent, setNewContent] = useState("");
+    const [newCategory, setNewCategory] = useState("");
+    const [newImageUrl, setNewImageUrl] = useState("");
+
+    const [editingId, setEditingId] = useState(null);
+    const [editTitle, setEditTitle] = useState("");
+    const [editContent, setEditContent] = useState("");
+    const [editCategory, setEditCategory] = useState("");
+    const [editImageUrl, setEditImageUrl] = useState("");
+
+    // Apply theme + persist
+    useEffect(() => {
+      document.body.className = theme; // body.dark handled by your CSS
+      localStorage.setItem("theme", theme);
+    }, [theme]);
+
+    // Persist view
+    useEffect(() => {
+      localStorage.setItem("view", view);
+    }, [view]);
+
+    // Menu button toggler
+    useEffect(() => {
+      const btn = document.getElementById("menuBtn");
+      const toggle = () => setSidebarOpen(prev => !prev);
+      btn.addEventListener("click", toggle);
+      return () => btn.removeEventListener("click", toggle);
+    }, []);
+
+    // Live articles
+    useEffect(() => {
+      const unsub = db
+        .collection("articles")
+        .orderBy("timestamp", "desc")
+        .onSnapshot((snap) => {
+          const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+          setArticles(list);
+        });
+      return unsub;
+    }, []);
+
+    // Build categories from both shapes (array `categories` or legacy string `category`)
+    const categories = useMemo(() => {
+      const s = new Set();
+      articles.forEach((a) => {
+        if (Array.isArray(a.categories)) {
+          a.categories.forEach((c) => c && s.add(c));
+        } else if (a.category) {
+          s.add(a.category);
+        }
+      });
+      return ["All", ...Array.from(s).sort((a, b) => a.localeCompare(b))];
+    }, [articles]);
+
+    // Search + filter (FIX: use `cats` variable for matching, not just a.categories)
+    const filtered = useMemo(() => {
+      const s = search.toLowerCase();
+      return articles.filter((a) => {
+        const cats = Array.isArray(a.categories) && a.categories.length
+          ? a.categories
+          : [a.category || "General"];
+
+        const matchCat = selectedCat === "All" || cats.includes(selectedCat);
+        const matchText =
+          (a.title || "").toLowerCase().includes(s) ||
+          (a.content || "").toLowerCase().includes(s);
+
+        return matchCat && matchText;
+      });
+    }, [articles, selectedCat, search]);
+
+    async function handleLogin(e) {
+      e.preventDefault(); // prevent page reload
+      const email = adminId;
+      const password = adminPw;
+
+      try {
+        const userCred = await firebase
+          .auth()
+          .signInWithEmailAndPassword(email, password);
+        const token = await userCred.user.getIdTokenResult();
+
+        if (token.claims && token.claims.admin) {
+          setIsAdmin(true);
+          alert("✅ Logged in as Admin");
+        } else {
+          alert("❌ You are not an admin");
+          await firebase.auth().signOut();
+        }
+      } catch (err) {
+        alert("Login failed. Please check your credentials and try again.");
+      }
+    }
+
+    async function handleLogout() {
+      await firebase.auth().signOut();
+      setIsAdmin(false);
+      setSidebarOpen(false);
+      alert("Logged out");
+    }
+
+    // Add article (keeps your timestamp as number for current UI compatibility)
+    async function addArticle() {
+      if (!newTitle.trim() || !newContent.trim())
+        return alert("Please add title & content");
+
+      const catArray = newCategory
+        .split(",")
+        .map(c => c.trim())
+        .filter(Boolean);
+
+      await db.collection("articles").add({
+        title: newTitle.trim(),
+        content: newContent.trim(),
+        categories: catArray.length ? catArray : ["General"], // FIX: always array
+        imageUrl: (newImageUrl || "").trim(),
+        timestamp: Date.now(), // keep numeric to match your renderers
+      });
+
+      setNewTitle("");
+      setNewContent("");
+      setNewCategory("");
+      setNewImageUrl("");
+    }
+
+    function startEdit(a) {
+      setEditingId(a.id);
+      setEditTitle(a.title || "");
+      setEditContent(a.content || "");
+      setEditCategory(
+        Array.isArray(a.categories) ? a.categories.join(", ") : (a.category || "")
+      );
+      setEditImageUrl(a.imageUrl || "");
+    }
+
+    async function saveEdit(id) {
+      if (!editTitle.trim() || !editContent.trim())
+        return alert("Title & content required");
+
+      const catArray = editCategory
+        .split(",")
+        .map(c => c.trim())
+        .filter(Boolean);
+
+      await db
+        .collection("articles")
+        .doc(id)
+        .update({
+          title: editTitle.trim(),
+          content: editContent.trim(),
+          categories: catArray.length ? catArray : ["General"],
+          imageUrl: (editImageUrl || "").trim(),
+        });
+
+      cancelEdit();
+    }
+
+    function cancelEdit() {
+      setEditingId(null);
+      setEditTitle("");
+      setEditContent("");
+      setEditCategory("");
+      setEditImageUrl("");
+    }
+
+    async function removeArticle(id) {
+      if (!confirm("Delete this article?")) return;
+      await db.collection("articles").doc(id).delete();
+    }
+
+    return (
+      <div>
+        {/* Sidebar */}
+        <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
+          <div className="side-title">⚙️ Menu</div>
+          <div className="side-section">
+            <button className="btn soft" onClick={() => setView("compact")}>📄 Compact View</button>
+            <button className="btn soft" onClick={() => setView("cards")}>🗂️ Card View</button>
+            <button className="btn primary" onClick={() => setTheme(theme === "light" ? "dark" : "light")}>
+              {theme === "light" ? "🌙 Dark Mode" : "☀️ Light Mode"}
+            </button>
+          </div>
+
+          <div className="side-section">
+            <input
+              className="input"
+              type="text"
+              placeholder="🔍 Search..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+
+          {isAdmin && (
+            <div className="side-section">
+              <button className="btn primary" onClick={() => setShowAddModal(true)}>➕ Add Article</button>
+            </div>
+          )}
+
+          <div className="side-section">
+            {isAdmin ? (
+              <button className="btn soft" onClick={handleLogout}>🚪 Logout</button>
+            ) : (
+              <form onSubmit={handleLogin}>
+                <div className="side-title" style={{ marginTop: 0 }}>
+                  🔑 Admin Login
+                </div>
+                <input
+                  className="input"
+                  type="text"
+                  placeholder="Admin ID"
+                  value={adminId}
+                  onChange={(e) => setAdminId(e.target.value)}
+                  required
+                />
+                <input
+                  className="input"
+                  type="password"
+                  placeholder="Password"
+                  value={adminPw}
+                  onChange={(e) => setAdminPw(e.target.value)}
+                  required
+                />
+                <button className="btn primary" type="submit">Login</button>
+                <div className="muted" style={{ marginTop: 8, fontSize: 12 }}>
+                  (Default: <b>user</b> / <b>noway</b>)
+                </div>
+              </form>
+            )}
+          </div>
+        </aside>
+
+        {/* Header */}
+        <h1>📰 The India Ledger</h1>
+        <p className="subhead">
+          Independent, fast, and simple — read by anyone, managed by Adidev.
+        </p>
+
+        {/* Categories */}
+        <div className="categories">
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              className={`chip ${selectedCat === cat ? "active" : ""}`}
+              onClick={() => setSelectedCat(cat)}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+
+        {/* Articles list */}
+        <div className={`list ${view === "cards" ? "cards" : "compact"}`}>
+          {filtered.map((a) => {
+            const isEditing = editingId === a.id;
+            const catLabel = Array.isArray(a.categories)
+              ? a.categories.join(", ")
+              : (a.category || "General");
+
+            return view === "cards" ? (
+              <div key={a.id} className="card">
+                {a.imageUrl ? (
+                  <img className="card-img" src={a.imageUrl} alt={a.title} />
+                ) : (
+                  <div className="card-img" />
+                )}
+                <div className="card-body">
+                  {isEditing ? (
+                    <div className="inline-form">
+                      <input
+                        type="text"
+                        value={editTitle}
+                        onChange={(e) => setEditTitle(e.target.value)}
+                        placeholder="Title"
+                      />
+                      <textarea
+                        value={editContent}
+                        onChange={(e) => setEditContent(e.target.value)}
+                        placeholder="Content"
+                      />
+                      <input
+                        type="text"
+                        value={editCategory}
+                        onChange={(e) => setEditCategory(e.target.value)}
+                        placeholder="Categories (comma separated)"
+                      />
+                      <input
+                        type="text"
+                        value={editImageUrl}
+                        onChange={(e) => setEditImageUrl(e.target.value)}
+                        placeholder="Image URL"
+                      />
+
+                      <div className="actions">
+                        <button className="act edit" onClick={() => saveEdit(a.id)}>
+                          💾 Save
+                        </button>
+                        <button className="act del" onClick={cancelEdit}>
+                          ✖ Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <h3 className="title">{String(a.title)}</h3>
+                      <p>{String(a.content)}</p>
+                      <div className="card-footer">
+                        {catLabel} •{" "}
+                        {a.timestamp ? timeAgo(new Date(a.timestamp)) : ""}
+                      </div>
+                      {isAdmin && (
+                        <div className="actions">
+                          <button className="act edit" onClick={() => startEdit(a)}>
+                            ✏️ Edit
+                          </button>
+                          <button className="act del" onClick={() => removeArticle(a.id)}>
+                            🗑️ Delete
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div key={a.id} className="article">
+                {a.imageUrl ? (
+                  <img className="thumb" src={a.imageUrl} alt={String(a.title)} />
+                ) : (
+                  <div className="thumb"></div>
+                )}
+                <div className="meta" style={{ flex: 1 }}>
+                  {isEditing ? (
+                    <div className="inline-form">
+                      <input
+                        type="text"
+                        value={editTitle}
+                        onChange={(e) => setEditTitle(e.target.value)}
+                        placeholder="Title"
+                      />
+                      <textarea
+                        value={editContent}
+                        onChange={(e) => setEditContent(e.target.value)}
+                        placeholder="Content"
+                      />
+                      <input
+                        type="text"
+                        value={editCategory}
+                        onChange={(e) => setEditCategory(e.target.value)}
+                        placeholder="Categories (comma separated)"
+                      />
+                      <input
+                        type="text"
+                        value={editImageUrl}
+                        onChange={(e) => setEditImageUrl(e.target.value)}
+                        placeholder="Image URL"
+                      />
+
+                      <div className="actions">
+                        <button className="act edit" onClick={() => saveEdit(a.id)}>
+                          💾 Save
+                        </button>
+                        <button className="act del" onClick={cancelEdit}>
+                          ✖ Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "baseline",
+                          gap: 8,
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <h3 className="title" style={{ margin: 0 }}>
+                          {String(a.title)}
+                        </h3>
+                        <small className="muted">
+                          • {catLabel} •{" "}
+                          {a.timestamp ? timeAgo(new Date(a.timestamp)) : ""}
+                        </small>
+                      </div>
+                      <p style={{ margin: "6px 0 0" }}>{String(a.content)}</p>
+                      {isAdmin && (
+                        <div className="actions" style={{ marginTop: 8 }}>
+                          <button className="act edit" onClick={() => startEdit(a)}>
+                            ✏️ Edit
+                          </button>
+                          <button className="act del" onClick={() => removeArticle(a.id)}>
+                            🗑️ Delete
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Floating Modal for Add Article */}
+        {showAddModal && isAdmin && (
+          <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
+            <div className="modal" onClick={(e) => e.stopPropagation()}>
+              <h3>➕ Add Article</h3>
+              <input
+                className="input"
+                type="text"
+                placeholder="Title"
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+              />
+              <textarea
+                className="input"
+                placeholder="Content"
+                value={newContent}
+                onChange={(e) => setNewContent(e.target.value)}
+              />
+              <input
+                className="input"
+                type="text"
+                placeholder="Categories (comma separated)"
+                value={newCategory}
+                onChange={(e) => setNewCategory(e.target.value)}
+              />
+              <input
+                className="input"
+                type="text"
+                placeholder="Image URL"
+                value={newImageUrl}
+                onChange={(e) => setNewImageUrl(e.target.value)}
+              />
+              <div className="row">
+                <button
+                  className="btn primary"
+                  onClick={() => { addArticle(); setShowAddModal(false); }}
+                >
+                  Publish
+                </button>
+                <button className="btn soft" onClick={() => setShowAddModal(false)}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  const root = ReactDOM.createRoot(document.getElementById("root"));
+  root.render(<App />);
+</script>
+  </body>
+</html>
