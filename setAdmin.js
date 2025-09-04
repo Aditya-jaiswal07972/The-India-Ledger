@@ -7,7 +7,7 @@ admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
 });
 
-const uid = "fs02rP0NDfRNKQgVGWh9yuZdtCF2"; // from Firebase Console → Authentication → Users
+const uid = "WYXNdR5SidVga4bW4tjNklQdANG3"; // from Firebase Console → Authentication → Users
 
 admin.auth().setCustomUserClaims(uid, { admin: true })
   .then(() => {

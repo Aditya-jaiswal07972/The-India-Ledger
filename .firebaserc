@@ -1,5 +1,8 @@
 {
   "projects": {
-    "default": "ledger-73fe1"
-  }
+    "default": "theindialedger",
+    "indialedger": "theindialedger"
+  },
+  "targets": {},
+  "etags": {}
 }
