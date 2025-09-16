@@ -45,7 +45,6 @@ async function fetchNews() {
     console.warn("⚠️ NewsAPI failed:", err.message);
   }
 
-  // --- Fallback: Google News RSS ---
   console.log("🔄 Falling back to Google News RSS...");
   const parser = new Parser();
   const feed = await parser.parseURL(
